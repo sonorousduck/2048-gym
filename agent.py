@@ -12,9 +12,8 @@ from tqdm import tqdm
 from modules.Buffer import Buffer
 
 class Agent:
-    def __init__(self, ):
+    def __init__(self):
        
-        # TODO: Determine size of state space
         self.state_space = 16
         self.action_space = 4
         
@@ -47,10 +46,13 @@ class Agent:
         last_init = tf.random_uniform_initializer(minval=-0.003, maxval=0.003)
 
         inputs = Input(shape=(self.state_space,))
-        out = Dense(256, activation="relu")(inputs)
+        out = Dense(128, activation="relu")(inputs)
         out = Dense(256, activation="relu")(out)
+        out = Dense(512, activation="relu")(out)
+        out = Dense(1024, activation="relu")(out)
 
-        outputs = Dense(self.action_space, activation="tanh", kernel_initializer=last_init)(out)
+
+        outputs = Dense(self.action_space, activation="softmax", kernel_initializer=last_init)(out)
 
         outputs = outputs
 
@@ -70,6 +72,8 @@ class Agent:
 
         out = Dense(256, activation="relu")(concat_layer)
         out = Dense(512, activation="relu")(out)
+        out = Dense(1024, activation="relu")(out)
+        out = Dense(2048, activation="relu")(out)
         out = Dense(1024, activation="relu")(out)
         outputs = Dense(1)(out)
 
@@ -106,7 +110,7 @@ class Agent:
         self.update(state_batch, action_batch, reward_batch, next_state_batch)
 
     @tf.function
-    def update_target(target_weights, weights, tau):
+    def update_target(self, target_weights, weights, tau):
         # LERP
         for (a, b) in zip(target_weights, weights):
             a.assign(b * tau + a * (1 - tau))
@@ -117,9 +121,14 @@ class Agent:
 
         sampled_actions = sampled_actions.numpy() + noise
 
-        legal_action = np.clip(sampled_actions, -1.0, 1.0)
+        legal_action = sampled_actions.argmax()
+        legal_action += 1
 
-        return np.squeeze(legal_action)
+        return legal_action
+
+        # legal_action = np.clip(sampled_actions, -1.0, 1.0)
+
+        # return np.squeeze(legal_action)
 
     
 
